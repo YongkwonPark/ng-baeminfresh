@@ -1,0 +1,3 @@
+rootProject.name = 'ng-baeminfresh'
+
+include 'baeminfresh-common', 'baeminfresh-api'

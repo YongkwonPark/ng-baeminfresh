@@ -1,0 +1,68 @@
+buildscript {
+	ext {
+		springBootVersion = '1.4.0.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath("io.spring.gradle:dependency-management-plugin:0.6.0.RELEASE")
+	}
+}
+
+configure(allprojects) {
+	apply plugin: 'java'
+
+	ext {
+        versions = [
+            jdk                : '1.8',
+            lombok             : '1.16.8',
+            mysql              : '5.1.38',
+            swagger            : '2.2.2'
+        ]
+    }
+
+	configurations {
+		// replaced with jcl-over-slf4j
+		all*.exclude group: 'commons-logging', module: 'commons-logging'
+		// replaced with log4j-over-slf4j
+		all*.exclude group: 'log4j', module: 'log4j'
+	}
+
+    repositories {
+        maven { url "https://repo.spring.io/libs-release" }
+        maven { url "https://repo.spring.io/milestone" }
+        mavenCentral()
+    }
+
+    sourceCompatibility = versions.jdk
+    targetCompatibility = versions.jdk
+    compileJava.options.encoding = 'UTF-8'
+}
+
+project('baeminfresh-api') {
+    apply plugin: 'spring-boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    dependencies {
+        project(':baeminfresh-common')
+
+        compile 'org.springframework.boot:spring-boot-starter-web'
+        compile 'org.springframework.boot:spring-boot-starter-data-jpa'
+        compile 'org.springframework.security:spring-security-crypto'
+
+        compile 'org.projectlombok:lombok'
+
+        runtime "mysql:mysql-connector-java:$versions.mysql"
+        runtime 'com.h2database:h2'
+        runtime "org.webjars:swagger-ui:$versions.swagger"
+
+        testCompile 'org.springframework.boot:spring-boot-starter-test'
+        testCompile 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    }
+}
+
+wrapper {
+    gradleVersion = '3.0'
+}

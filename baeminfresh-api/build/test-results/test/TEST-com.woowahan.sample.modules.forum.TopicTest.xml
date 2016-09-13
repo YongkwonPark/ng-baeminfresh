@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.woowahan.sample.modules.forum.TopicTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2016-09-13T06:05:57" hostname="macprong.local" time="0.631">
+  <properties/>
+  <testcase name="requiredAttributes" classname="com.woowahan.sample.modules.forum.TopicTest" time="0.125"/>
+  <testcase name="remove" classname="com.woowahan.sample.modules.forum.TopicTest" time="0.259"/>
+  <testcase name="edit" classname="com.woowahan.sample.modules.forum.TopicTest" time="0.246"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
