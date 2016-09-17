@@ -15,6 +15,8 @@ configure(allprojects) {
 	apply plugin: 'java'
 
 	ext {
+        gradleScriptDir = "${rootProject.projectDir}/gradle"
+
         versions = [
             jdk                : '1.8',
             lombok             : '1.16.8',
@@ -36,6 +38,15 @@ configure(allprojects) {
         mavenCentral()
     }
 
+    dependencies {
+        testCompile("junit:junit") {
+            exclude group:'org.hamcrest', module:'hamcrest-core'
+        }
+        testCompile("org.mockito:mockito-core") {
+            exclude group:'org.hamcrest', module:'hamcrest-core'
+        }
+    }
+
     sourceCompatibility = versions.jdk
     targetCompatibility = versions.jdk
     compileJava.options.encoding = 'UTF-8'
@@ -44,6 +55,7 @@ configure(allprojects) {
 project('baeminfresh-api') {
     apply plugin: 'spring-boot'
     apply plugin: 'io.spring.dependency-management'
+    apply from: "$gradleScriptDir/querydsl.gradle"
 
     dependencies {
         project(':baeminfresh-common')

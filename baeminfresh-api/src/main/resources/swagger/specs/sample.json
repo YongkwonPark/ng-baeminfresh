@@ -24,6 +24,11 @@
           "format": "int64",
           "required": true,
           "description": "카테고리 식별번호"
+        },{
+          "name": "title",
+          "type": "string",
+          "in": "query",
+          "description": "주제(Topic) 검색용 제목"
         }],
         "tags": ["forum"]
       },

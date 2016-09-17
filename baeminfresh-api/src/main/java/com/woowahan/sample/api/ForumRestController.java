@@ -1,23 +1,40 @@
 package com.woowahan.sample.api;
 
-import com.woowahan.sample.modules.forum.Category;
-import com.woowahan.sample.modules.forum.Post;
-import com.woowahan.sample.modules.forum.Topic;
+import com.querydsl.core.BooleanBuilder;
+import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.woowahan.sample.modules.forum.*;
+import com.woowahan.sample.modules.forum.PostRepository.CountByTopicID;
 import com.woowahan.sample.modules.forum.components.ForumService;
 import com.woowahan.sample.modules.forum.components.ForumService.TopicForm;
+import com.woowahan.sample.modules.forum.specs.TopicSpec;
 import lombok.Builder;
 import lombok.Data;
 import lombok.val;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.domain.Specifications;
+import org.springframework.data.jpa.repository.query.JpaQueryCreator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import org.springframework.web.bind.annotation.*;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Spliterator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author ykpark@woowahan.com
@@ -29,9 +46,14 @@ public class ForumRestController {
     private ForumService forumService;
     private SpringValidatorAdapter validator;
 
-    public ForumRestController(ForumService forumService, SpringValidatorAdapter validator) {
+    private TopicRepository topicRepository;
+    private PostRepository postRepository;
+
+    public ForumRestController(ForumService forumService, SpringValidatorAdapter validator, TopicRepository topicRepository, PostRepository postRepository) {
         this.forumService = forumService;
         this.validator = validator;
+        this.topicRepository = topicRepository;
+        this.postRepository = postRepository;
     }
 
     @GetMapping(value = "/categories")
@@ -40,10 +62,16 @@ public class ForumRestController {
     }
 
     @GetMapping(value = "/categories/{categoryId}/topics")
-    public List<TopicData> topics(@PathVariable Long categoryId) {
-        val category = forumService.loadCategory(categoryId);
+    public List<TopicData> topics(@PathVariable Long categoryId, TopicSearchCommand command) {
+        command.category = forumService.loadCategory(categoryId);
 
-        return forumService.loadTopics(category).stream().map(TopicData::of).collect(Collectors.toList());
+        val topics = topicRepository.findAll(command);
+        val postCountByTopicIDs = postRepository.countByTopics(topics)
+                .stream().collect(Collectors.toMap(CountByTopicID::getTopicId, CountByTopicID::getPostCount));
+
+        return topics.stream().map(TopicData::of)
+                              .peek(data -> data.setPostCount(postCountByTopicIDs.getOrDefault(data.getId(), 0l)))
+                              .collect(Collectors.toList());
     }
 
     @PostMapping(value = "/categories/{categoryId}/topics", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -76,7 +104,11 @@ public class ForumRestController {
         forumService.loadCategory(categoryId);
         val topic = forumService.loadTopic(topicId);
 
-        return forumService.loadPosts(topic).stream().map(PostData::of).collect(Collectors.toList());
+        QPost query = QPost.post;
+        Iterable<Post> posts = postRepository.findAll(query.topic.eq(topic), query.createdAt.desc());
+
+        return StreamSupport.stream(posts.spliterator(), false)
+                            .map(PostData::of).collect(Collectors.toList());
     }
 
 
@@ -90,6 +122,26 @@ public class ForumRestController {
     }
 
 
+    @Data
+    static class TopicSearchCommand implements Specification<Topic> {
+        Category category;
+        String title;
+
+        @Override
+        public Predicate toPredicate(Root<Topic> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+            Objects.requireNonNull(category);
+
+            Specifications<Topic> specs = Specifications.where(TopicSpec.isEqualTo(category));
+            if (StringUtils.hasText(title)) {
+                specs = specs.and(TopicSpec.likeTitle(title));
+            }
+
+            query.orderBy(cb.desc(root.get("createdAt")));
+
+            return specs.toPredicate(root, query, cb);
+        }
+
+    }
 
     @Data
     @Builder
@@ -100,6 +152,8 @@ public class ForumRestController {
         String author;
         Date createdAt;
         Date updatedAt;
+
+        Long postCount = 0l;
 
         static TopicData of(Topic source) {
             return TopicData.builder().id(source.getId())

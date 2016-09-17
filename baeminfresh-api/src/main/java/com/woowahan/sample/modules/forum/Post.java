@@ -13,6 +13,7 @@ public class Post implements Password.PasswordProtectable {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Lob
     private String text;
     private String author;
     private Password password;
