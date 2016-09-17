@@ -1,0 +1,54 @@
+apply plugin: 'idea'
+
+configurations {
+    querydslapt
+}
+
+ext {
+    querydslVersion = '4.1.4'
+    generatedJavaSourceDir = "src/generated/java"
+}
+
+dependencies {
+    compile 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final'
+
+    compile "com.querydsl:querydsl-jpa:$querydslVersion"
+    querydslapt "com.querydsl:querydsl-apt:$querydslVersion"
+}
+
+sourceSets {
+    generated {
+        java.srcDirs = [generatedJavaSourceDir]
+    }
+}
+
+task generateQueryDSL(type: JavaCompile, group: 'build', description: 'Generates the QueryDSL query types') {
+    source = sourceSets.main.java
+    classpath = configurations.compile + configurations.querydslapt
+    options.compilerArgs = [
+        "-proc:only", "-processor", "com.querydsl.apt.jpa.JPAAnnotationProcessor"
+    ]
+    destinationDir = file(generatedJavaSourceDir)
+}
+
+compileGeneratedJava {
+    dependsOn generateQueryDSL
+    options.warnings = false
+    classpath += sourceSets.main.runtimeClasspath
+}
+
+compileJava {
+    dependsOn generateQueryDSL
+    source += sourceSets.generated.java
+}
+
+clean {
+    delete sourceSets.generated.java.srcDirs
+}
+idea {
+    module {
+        sourceDirs += sourceSets.generated.java.srcDirs
+        generatedSourceDirs += sourceSets.generated.java.srcDirs
+    }
+}
+
