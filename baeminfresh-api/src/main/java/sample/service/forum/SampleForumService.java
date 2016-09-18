@@ -70,6 +70,14 @@ public class SampleForumService implements ForumService {
     }
 
     @Override
+    public void reply(ReplyPost command) {
+        val topic = loadTopic(command.getTopicId());
+
+        topic.reply(command.toPostCreator());
+        topicRepository.save(topic);
+    }
+
+    @Override
     public List<Post> loadPosts(Topic topic) {
         return postRepository.findByTopic(topic);
     }

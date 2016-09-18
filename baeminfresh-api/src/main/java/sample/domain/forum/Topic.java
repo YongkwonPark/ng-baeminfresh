@@ -5,10 +5,9 @@ import org.hibernate.annotations.Type;
 import org.springframework.dao.DataAccessException;
 
 import javax.persistence.*;
-import java.util.Date;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 /**
@@ -27,6 +26,9 @@ public class Topic implements Password.PasswordProtectable {
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Category category;
+
+    @OneToMany(mappedBy = "topic", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    private List<Post> posts = new ArrayList<>();
 
     private Date createdAt;
     private Date updatedAt;
@@ -68,6 +70,11 @@ public class Topic implements Password.PasswordProtectable {
 
         action.accept(this);
     }
+
+    public void reply(Function<Topic, Post> postCreator) {
+        posts.add(postCreator.apply(this));
+    }
+
 
     public UUID getId() {
         return id;

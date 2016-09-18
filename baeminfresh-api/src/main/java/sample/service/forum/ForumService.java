@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.hibernate.validator.constraints.NotEmpty;
 import sample.domain.forum.Category;
 import sample.domain.forum.Post;
+import sample.domain.forum.PostCreator;
 import sample.domain.forum.Topic;
 
 import javax.transaction.Transactional;
@@ -31,6 +32,8 @@ public interface ForumService {
     void write(WriteTopic command);
     void edit(EditTopic command);
     void remove(RemoveTopic command);
+
+    void reply(ReplyPost command);
 
 
     List<Post> loadPosts(Topic topic);
@@ -83,6 +86,30 @@ public interface ForumService {
         private UUID topicId;
 
         private String password = "";
+
+    }
+
+    @Data
+    class ReplyPost implements Validatable {
+
+        @NotNull
+        private Long categoryId;
+
+        @NotNull
+        private UUID topicId;
+
+        @NotEmpty
+        private String text;
+
+        @NotEmpty
+        private String author;
+
+        @NotEmpty
+        private String password;
+
+        public PostCreator toPostCreator() {
+            return new PostCreator(text, author, password);
+        }
 
     }
 
