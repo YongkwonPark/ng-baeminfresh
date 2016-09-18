@@ -1,4 +1,4 @@
-package sample.application.forum;
+package sample.service.forum;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

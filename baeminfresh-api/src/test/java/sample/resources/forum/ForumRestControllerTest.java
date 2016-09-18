@@ -1,8 +1,7 @@
-package sample.resources;
+package sample.resources.forum;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.woowahan.BaeminfreshApiApplication;
-import sample.application.forum.ForumService.TopicForm;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +11,10 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
+import sample.service.forum.ForumService.EditTopic;
+import sample.service.forum.ForumService.WriteTopic;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpMethod.POST;
@@ -25,6 +28,7 @@ public class ForumRestControllerTest {
 
     static final String URI_TOPICS = "/sample/forum/categories/{categoryId}/topics";
     static final String URI_WRITE_TOPIC = "/sample/forum/categories/{categoryId}/topics";
+    static final String URI_EDIT_TOPIC = "/sample/forum/categories/{categoryId}/topics/{topicId}";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -37,22 +41,23 @@ public class ForumRestControllerTest {
 
     @Test
     public void writeTopic() {
-        TopicForm form = new TopicForm();
-        form.setTitle("write new topic!");
-        form.setAuthor("junit");
-        form.setPassword("password");
+        WriteTopic command = new WriteTopic();
+        command.setTitle("write new topic!");
+        command.setAuthor("junit");
+        command.setPassword("password");
 
-        ResponseEntity<Void> entity = restTemplate.exchange(URI_WRITE_TOPIC, POST, new HttpEntity(form), Void.class, 1);
+        ResponseEntity<Void> entity = restTemplate.exchange(URI_WRITE_TOPIC, POST, new HttpEntity(command), Void.class, 1);
         assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 
     @Test
     public void writeTopic_ValidationFailed() {
-        TopicForm form = new TopicForm();
+        EditTopic command = new EditTopic();
+        command.setId(UUID.randomUUID());
 
-        ResponseEntity<JsonNode> entity = restTemplate.exchange(URI_WRITE_TOPIC, POST, new HttpEntity(form), JsonNode.class, 1);
+        ResponseEntity<JsonNode> entity = restTemplate.exchange(URI_WRITE_TOPIC, POST, new HttpEntity(command), JsonNode.class, 1);
         assertThat(entity.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(entity.getBody().path("additionalInformation").size()).isEqualTo(3);
+        assertThat(entity.getBody().path("additionalInformation").size()).isEqualTo(4);
     }
 
 }

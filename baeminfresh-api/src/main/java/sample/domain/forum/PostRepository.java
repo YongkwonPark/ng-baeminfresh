@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.querydsl.QueryDslPredicateExecutor;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author ykpark@woowahan.com
@@ -19,7 +20,7 @@ public interface PostRepository extends JpaRepository<Post, Long>
 
 
     interface CountByTopicID {
-        Long getTopicId();
+        UUID getTopicId();
         Long getPostCount();
     }
 

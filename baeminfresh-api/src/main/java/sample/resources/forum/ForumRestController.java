@@ -1,11 +1,6 @@
-package sample.resources;
+package sample.resources.forum;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import sample.domain.forum.*;
-import sample.domain.forum.PostRepository.CountByTopicID;
-import sample.application.forum.ForumService;
-import sample.application.forum.ForumService.TopicForm;
-import sample.domain.forum.specs.TopicSpec;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -23,6 +18,13 @@ import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
 import org.springframework.web.bind.annotation.*;
+import sample.service.forum.ForumService;
+import sample.service.forum.ForumService.EditTopic;
+import sample.service.forum.ForumService.RemoveTopic;
+import sample.service.forum.ForumService.WriteTopic;
+import sample.domain.forum.*;
+import sample.domain.forum.PostRepository.CountByTopicID;
+import sample.domain.forum.specs.TopicSpec;
 
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
@@ -31,6 +33,7 @@ import javax.persistence.criteria.Root;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.springframework.data.domain.Sort.Direction.DESC;
@@ -67,8 +70,6 @@ public class ForumRestController {
                                 , @PageableDefault(sort = FIELD_CREATEDAT, direction = DESC) Pageable pageable) {
         query.category = forumService.loadCategory(query.getCategoryId());
 
-        System.out.println("pageable = " + pageable);
-        System.out.println("pageable.getSort() = " + pageable.getSort());
         if (Objects.isNull(pageable.getSort().getOrderFor(FIELD_CREATEDAT))) {
             pageable.getSort().and(new Sort(DESC, FIELD_CREATEDAT));
         }
@@ -82,31 +83,32 @@ public class ForumRestController {
 
     @PostMapping(value = "/categories/{categoryId}/topics", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    public void writeTopic(@PathVariable Long categoryId, @RequestBody TopicForm form, BindingResult bindingResult) throws BindException {
-        validateAndThrow(form, bindingResult, TopicForm.Write.class);
+    public void writeTopic(@PathVariable Long categoryId, @RequestBody WriteTopic command, BindingResult bindingResult) throws BindException {
+        command.setCategoryId(categoryId);
+        command.validate(validator, bindingResult);
 
-        forumService.write(forumService.loadCategory(categoryId), form);
+        forumService.write(command);
     }
 
     @PutMapping(value = "/categories/{categoryId}/topics/{topicId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void editTopic(@PathVariable Long categoryId, @PathVariable Long topicId, @RequestBody TopicForm form, BindingResult bindingResult) throws BindException {
-        form.setId(topicId);
+    public void editTopic(@PathVariable Long categoryId, @PathVariable UUID topicId, @RequestBody EditTopic command, BindingResult bindingResult) throws BindException {
+        command.setId(topicId);
+        command.validate(validator, bindingResult);
 
-        validateAndThrow(form, bindingResult, TopicForm.Edit.class);
-
-        forumService.edit(form);
+        forumService.edit(command);
     }
 
     @DeleteMapping(value = "/categories/{categoryId}/topics/{topicId}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void removeTopic(@PathVariable Long categoryId, @PathVariable Long topicId, @RequestBody TopicRemoveCommand command) {
-        forumService.loadCategory(categoryId);
-        val topic = forumService.loadTopic(topicId);
+    public void removeTopic(@PathVariable Long categoryId, @PathVariable UUID topicId, @RequestBody RemoveTopic command, BindingResult bindingResult) throws BindException {
+        command.setCategoryId(categoryId);
+        command.setTopicId(topicId);
+        command.validate(validator, bindingResult);
 
-        forumService.remove(topic, command.password);
+        forumService.remove(command);
     }
 
     @GetMapping(value = "/categories/{categoryId}/topics/{topicId}/posts")
-    public Page<PostData> posts(@PathVariable Long categoryId, @PathVariable Long topicId
+    public Page<PostData> posts(@PathVariable Long categoryId, @PathVariable UUID topicId
                               , @PageableDefault(sort = FIELD_CREATEDAT, direction = DESC) Pageable pageable) {
         forumService.loadCategory(categoryId);
         val topic = forumService.loadTopic(topicId);
@@ -152,7 +154,7 @@ public class ForumRestController {
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     static class TopicData {
 
-        Long id;
+        UUID id;
         String title;
         String author;
         Date createdAt;
@@ -189,11 +191,6 @@ public class ForumRestController {
                                      .build();
         }
 
-    }
-
-    @Data
-    class TopicRemoveCommand {
-        String password;
     }
 
 }

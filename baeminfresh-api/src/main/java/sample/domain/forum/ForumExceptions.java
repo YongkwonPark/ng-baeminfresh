@@ -3,6 +3,8 @@ package sample.domain.forum;
 import com.woowahan.common.BusinessException;
 import com.woowahan.common.ResourceNotFoundException;
 
+import java.util.UUID;
+
 /**
  * @author ykpark@woowahan.com
  */
@@ -30,9 +32,9 @@ public class ForumExceptions {
 
     public static class TopicNotFoundException extends ResourceNotFoundException {
 
-        final Long topicId;
+        final UUID topicId;
 
-        public TopicNotFoundException(Long topicId) {
+        public TopicNotFoundException(UUID topicId) {
             super(String.format("%d 번 주제를 찾을 수 없습니다.", topicId));
 
             this.topicId = topicId;

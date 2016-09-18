@@ -1,10 +1,12 @@
 package sample.domain.forum;
 
 import lombok.NonNull;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -13,8 +15,9 @@ import java.util.function.Consumer;
 @Entity
 public class Topic implements Password.PasswordProtectable {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    @Type(type = "org.hibernate.type.UUIDCharType")
+    private UUID id;
 
     private String title;
     private String author;
@@ -23,20 +26,24 @@ public class Topic implements Password.PasswordProtectable {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Category category;
 
-    private Date createdAt = new Date();
-    private Date updatedAt = createdAt;
+    private Date createdAt;
+    private Date updatedAt;
 
 
-    public Topic(String title, String author, String rawPassword, Category category) {
+    public Topic(UUID id, String title, String author, String rawPassword, Category category) {
+        Objects.requireNonNull(id, "id must not be null");
         Objects.requireNonNull(title, "title must not be null");
         Objects.requireNonNull(author, "author must not be null");
         Objects.requireNonNull(rawPassword, "password must not be null");
         Objects.requireNonNull(category, "category must not be null");
 
+        this.id = id;
         this.title = title;
         this.author = author;
         this.password = Password.wrap(rawPassword);
         this.category = category;
+        this.createdAt = new Date();
+        this.updatedAt = createdAt;
     }
 
     public void edit(@NonNull String title, @NonNull String author, @NonNull String rawPassword) {
@@ -50,12 +57,12 @@ public class Topic implements Password.PasswordProtectable {
         }
     }
 
-    public void ifRemovable(String rawPassword, Consumer<Topic> consumer) {
+    public void ifRemovable(String rawPassword, Consumer<Topic> action) {
         verify(rawPassword);
-        consumer.accept(this);
+        action.accept(this);
     }
 
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -87,19 +94,15 @@ public class Topic implements Password.PasswordProtectable {
 
         Topic topic = (Topic) o;
 
-        if (!title.equals(topic.title)) return false;
-        if (!author.equals(topic.author)) return false;
-        return createdAt.equals(topic.createdAt);
+        return id.equals(topic.id);
 
     }
 
     @Override
     public int hashCode() {
-        int result = title.hashCode();
-        result = 31 * result + author.hashCode();
-        result = 31 * result + createdAt.hashCode();
-        return result;
+        return id.hashCode();
     }
+
 
     // for hibernate
     private Topic() { }

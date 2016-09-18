@@ -1,11 +1,13 @@
-package sample.application.forum;
+package sample.service.forum;
 
+import lombok.val;
+import org.springframework.stereotype.Service;
 import sample.domain.forum.*;
 import sample.domain.forum.ForumExceptions.CategoryNotFoundException;
 import sample.domain.forum.ForumExceptions.TopicNotFoundException;
-import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author ykpark@woowahan.com
@@ -42,24 +44,27 @@ public class SampleForumService implements ForumService {
     }
 
     @Override
-    public Topic loadTopic(Long topicId) {
+    public Topic loadTopic(UUID topicId) {
         return topicRepository.findById(topicId)
                               .orElseThrow(() -> new TopicNotFoundException(topicId));
     }
 
+
     @Override
-    public void write(Category category, TopicForm form) {
-        topicRepository.save(new Topic(form.getTitle(), form.getAuthor(), form.getPassword(), category));
+    public void write(WriteTopic command) {
+        val category = loadCategory(command.getCategoryId());
+
+        topicRepository.save(new Topic(command.getId(), command.getTitle(), command.getAuthor(), command.getPassword(), category));
     }
 
     @Override
-    public void edit(TopicForm form) {
-        loadTopic(form.getId()).edit(form.getTitle(), form.getAuthor(), form.getPassword());
+    public void edit(EditTopic command) {
+        loadTopic(command.getId()).edit(command.getTitle(), command.getAuthor(), command.getPassword());
     }
 
     @Override
-    public void remove(Topic topic, String rawPassword) {
-        topic.ifRemovable(rawPassword, topicRepository::delete);
+    public void remove(RemoveTopic command) {
+        loadTopic(command.getTopicId()).ifRemovable(command.getPassword(), topicRepository::delete);
     }
 
     @Override
