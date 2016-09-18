@@ -2,6 +2,8 @@ package sample.domain.forum;
 
 import com.woowahan.common.BusinessException;
 import com.woowahan.common.ResourceNotFoundException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.UUID;
 
@@ -35,7 +37,19 @@ public class ForumExceptions {
         final UUID topicId;
 
         public TopicNotFoundException(UUID topicId) {
-            super(String.format("%d 번 주제를 찾을 수 없습니다.", topicId));
+            super(String.format("주제(id: %s)를 찾을 수 없습니다.", topicId));
+
+            this.topicId = topicId;
+        }
+
+    }
+
+    public static class PostAlreadyExistsInTopicException extends BusinessException {
+
+        final UUID topicId;
+
+        public PostAlreadyExistsInTopicException(UUID topicId) {
+            super(String.format("삭제를 요청한 주제(id: %s)에 등록된 글이 존재합니다.", topicId));
 
             this.topicId = topicId;
         }

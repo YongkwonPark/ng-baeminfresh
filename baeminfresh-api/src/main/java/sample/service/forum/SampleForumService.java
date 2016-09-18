@@ -64,7 +64,9 @@ public class SampleForumService implements ForumService {
 
     @Override
     public void remove(RemoveTopic command) {
-        loadTopic(command.getTopicId()).ifRemovable(command.getPassword(), topicRepository::delete);
+        val topic = loadTopic(command.getTopicId());
+
+        topic.ifRemovable( command.getPassword(), () -> postRepository.countByTopic(topic), topicRepository::delete);
     }
 
     @Override

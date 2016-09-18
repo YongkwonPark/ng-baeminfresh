@@ -2,12 +2,14 @@ package sample.domain.forum;
 
 import lombok.NonNull;
 import org.hibernate.annotations.Type;
+import org.springframework.dao.DataAccessException;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * @author ykpark@woowahan.com
@@ -57,8 +59,13 @@ public class Topic implements Password.PasswordProtectable {
         }
     }
 
-    public void ifRemovable(String rawPassword, Consumer<Topic> action) {
+    public void ifRemovable(String rawPassword, Supplier<Long> postCounter, Consumer<Topic> action) {
         verify(rawPassword);
+
+        if (postCounter.get() > 0) {
+            throw new ForumExceptions.PostAlreadyExistsInTopicException(getId());
+        }
+
         action.accept(this);
     }
 

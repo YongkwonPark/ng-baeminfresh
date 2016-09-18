@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.web.AbstractErrorController;
 import org.springframework.boot.autoconfigure.web.ErrorAttributes;
 import org.springframework.boot.autoconfigure.web.ErrorProperties;
 import org.springframework.context.MessageSource;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.ObjectError;
@@ -55,8 +56,15 @@ public class GlobalErrorMessageRestController extends AbstractErrorController {
 
         String path = (String) attributes.getOrDefault("path", null);
         HttpStatus status = getStatus(request);
+        String message;
 
-        String message = messageSource.getMessage("error." + status, null, null, locale);
+        Throwable throwable = errorAttributes.getError(requestAttributes);
+        if (MessageSourceResolvable.class.isAssignableFrom(throwable.getClass())) {
+            message = messageSource.getMessage((MessageSourceResolvable) throwable, locale);
+        } else {
+            message = messageSource.getMessage("error." + status, null, null, locale);
+        }
+
         if(Objects.nonNull(message)) {
             attributes.put("message", message);
         }

@@ -36,6 +36,14 @@ public class TopicTest {
         }
     }
 
+    @Test(expected = ForumExceptions.BadPasswordException.class)
+    public void badPassword() {
+        String password = "password";
+        Topic topic = new Topic(UUID.randomUUID(), "title", "author", password, mock(Category.class));
+
+        topic.edit("", "", "bad_password");
+    }
+
     @Test
     public void edit() {
         String password = "password";
@@ -54,10 +62,18 @@ public class TopicTest {
         String password = "password";
         Topic topic = new Topic(UUID.randomUUID(), "title", "author", password, mock(Category.class));
 
-        Consumer<Topic> consumer = mock(Consumer.class);
-        topic.ifRemovable(password, consumer);
+        Consumer<Topic> action = mock(Consumer.class);
+        topic.ifRemovable(password, () -> 0l, action);
 
-        verify(consumer, times(1)).accept(topic);
+        verify(action, times(1)).accept(topic);
+    }
+
+    @Test(expected = ForumExceptions.PostAlreadyExistsInTopicException.class)
+    public void removeTopostAlreadyExistsInTopic() {
+        String password = "password";
+        Topic topic = new Topic(UUID.randomUUID(), "title", "author", password, mock(Category.class));
+
+        topic.ifRemovable(password, () -> 1l, mock(Consumer.class));
     }
 
 }

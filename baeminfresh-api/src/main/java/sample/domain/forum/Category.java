@@ -68,6 +68,6 @@ public class Category {
     }
 
     // for hibernate
-    private Category() { }
+    protected Category() { }
 
 }
