@@ -1,9 +1,7 @@
 package com.woowahan.sample.api;
 
-import com.querydsl.core.BooleanBuilder;
-import com.querydsl.core.types.OrderSpecifier;
-import com.querydsl.core.types.dsl.BooleanExpression;
-import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.woowahan.sample.modules.forum.*;
 import com.woowahan.sample.modules.forum.PostRepository.CountByTopicID;
 import com.woowahan.sample.modules.forum.components.ForumService;
@@ -11,10 +9,15 @@ import com.woowahan.sample.modules.forum.components.ForumService.TopicForm;
 import com.woowahan.sample.modules.forum.specs.TopicSpec;
 import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.Accessors;
 import lombok.val;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.domain.Specifications;
-import org.springframework.data.jpa.repository.query.JpaQueryCreator;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -30,11 +33,10 @@ import javax.persistence.criteria.Root;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Spliterator;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static org.springframework.data.domain.Sort.Direction.DESC;
 
 /**
  * @author ykpark@woowahan.com
@@ -42,6 +44,8 @@ import java.util.stream.StreamSupport;
 @RestController
 @RequestMapping(value = "/sample/forum")
 public class ForumRestController {
+
+    final static String FIELD_CREATEDAT = "createdAt";
 
     private ForumService forumService;
     private SpringValidatorAdapter validator;
@@ -62,16 +66,21 @@ public class ForumRestController {
     }
 
     @GetMapping(value = "/categories/{categoryId}/topics")
-    public List<TopicData> topics(@PathVariable Long categoryId, TopicSearchCommand command) {
-        command.category = forumService.loadCategory(categoryId);
+    public Page<TopicData> topics(TopicSearchQuery query
+                                , @PageableDefault(sort = FIELD_CREATEDAT, direction = DESC) Pageable pageable) {
+        query.category = forumService.loadCategory(query.getCategoryId());
 
-        val topics = topicRepository.findAll(command);
-        val postCountByTopicIDs = postRepository.countByTopics(topics)
+        System.out.println("pageable = " + pageable);
+        System.out.println("pageable.getSort() = " + pageable.getSort());
+        if (Objects.isNull(pageable.getSort().getOrderFor(FIELD_CREATEDAT))) {
+            pageable.getSort().and(new Sort(DESC, FIELD_CREATEDAT));
+        }
+
+        val topics = topicRepository.findAll(query, pageable);
+        val postCountByTopicIDs = postRepository.countByTopics(topics.getContent())
                 .stream().collect(Collectors.toMap(CountByTopicID::getTopicId, CountByTopicID::getPostCount));
 
-        return topics.stream().map(TopicData::of)
-                              .peek(data -> data.setPostCount(postCountByTopicIDs.getOrDefault(data.getId(), 0l)))
-                              .collect(Collectors.toList());
+        return topics.map(source -> TopicData.of(source).postCount(postCountByTopicIDs.getOrDefault(source.getId(), 0l)));
     }
 
     @PostMapping(value = "/categories/{categoryId}/topics", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -100,19 +109,18 @@ public class ForumRestController {
     }
 
     @GetMapping(value = "/categories/{categoryId}/topics/{topicId}/posts")
-    public List<PostData> posts(@PathVariable Long categoryId, @PathVariable Long topicId) {
+    public Page<PostData> posts(@PathVariable Long categoryId, @PathVariable Long topicId
+                              , @PageableDefault(sort = FIELD_CREATEDAT, direction = DESC) Pageable pageable) {
         forumService.loadCategory(categoryId);
         val topic = forumService.loadTopic(topicId);
 
         QPost query = QPost.post;
-        Iterable<Post> posts = postRepository.findAll(query.topic.eq(topic), query.createdAt.desc());
+        val posts = postRepository.findAll(query.topic.eq(topic), pageable);
 
-        return StreamSupport.stream(posts.spliterator(), false)
-                            .map(PostData::of).collect(Collectors.toList());
+        return posts.map(PostData::of);
     }
 
-
-    public void validateAndThrow(Object target, BindingResult bindingResult, Object...validationHints) throws BindException {
+    private void validateAndThrow(Object target, BindingResult bindingResult, Object...validationHints) throws BindException {
         validator.validate(target, bindingResult);
         validator.validate(target, bindingResult, validationHints);
 
@@ -123,7 +131,8 @@ public class ForumRestController {
 
 
     @Data
-    static class TopicSearchCommand implements Specification<Topic> {
+    static class TopicSearchQuery implements Specification<Topic> {
+        Long categoryId;
         Category category;
         String title;
 
@@ -136,15 +145,14 @@ public class ForumRestController {
                 specs = specs.and(TopicSpec.likeTitle(title));
             }
 
-            query.orderBy(cb.desc(root.get("createdAt")));
-
             return specs.toPredicate(root, query, cb);
         }
 
     }
 
     @Data
-    @Builder
+    @Accessors(fluent = true)
+    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     static class TopicData {
 
         Long id;
@@ -156,12 +164,11 @@ public class ForumRestController {
         Long postCount = 0l;
 
         static TopicData of(Topic source) {
-            return TopicData.builder().id(source.getId())
-                                      .title(source.getTitle())
-                                      .author(source.getAuthor())
-                                      .createdAt(source.getCreatedAt())
-                                      .updatedAt(source.getUpdatedAt())
-                                      .build();
+            return new TopicData().id(source.getId())
+                                  .title(source.getTitle())
+                                  .author(source.getAuthor())
+                                  .createdAt(source.getCreatedAt())
+                                  .updatedAt(source.getUpdatedAt());
         }
 
     }

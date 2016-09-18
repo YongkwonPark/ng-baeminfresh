@@ -29,6 +29,20 @@
           "type": "string",
           "in": "query",
           "description": "주제(Topic) 검색용 제목"
+        },{
+          "name": "page",
+          "type": "integer",
+          "in": "query",
+          "format": "int64",
+          "default": 0,
+          "description": "페이지 번호"
+        },{
+          "name": "size",
+          "type": "integer",
+          "in": "query",
+          "format": "int64",
+          "default": 10,
+          "description": "한 페이지에 가져올 주제(Topic) 갯수"
         }],
         "tags": ["forum"]
       },
