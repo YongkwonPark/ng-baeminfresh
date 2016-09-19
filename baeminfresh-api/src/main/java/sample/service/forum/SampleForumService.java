@@ -66,7 +66,7 @@ public class SampleForumService implements ForumService {
     public void remove(RemoveTopic command) {
         val topic = loadTopic(command.getTopicId());
 
-        topic.ifRemovable( command.getPassword(), () -> postRepository.countByTopic(topic), topicRepository::delete);
+        topic.ifRemovable(command.getPassword(), postRepository::countByTopic, topicRepository::delete);
     }
 
     @Override
@@ -74,7 +74,6 @@ public class SampleForumService implements ForumService {
         val topic = loadTopic(command.getTopicId());
 
         topic.reply(command.toPostCreator());
-        topicRepository.save(topic);
     }
 
     @Override

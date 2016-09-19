@@ -61,10 +61,10 @@ public class Topic implements Password.PasswordProtectable {
         }
     }
 
-    public void ifRemovable(String rawPassword, Supplier<Long> postCounter, Consumer<Topic> action) {
+    public void ifRemovable(String rawPassword, Function<Topic, Long> postCounter, Consumer<Topic> action) {
         verify(rawPassword);
 
-        if (postCounter.get() > 0) {
+        if (postCounter.apply(this) > 0) {
             throw new ForumExceptions.PostAlreadyExistsInTopicException(getId());
         }
 
