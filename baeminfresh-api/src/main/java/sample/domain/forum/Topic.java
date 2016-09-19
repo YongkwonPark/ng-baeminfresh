@@ -1,6 +1,7 @@
 package sample.domain.forum;
 
 import lombok.NonNull;
+import lombok.val;
 import org.hibernate.annotations.Type;
 import org.springframework.dao.DataAccessException;
 
@@ -27,7 +28,7 @@ public class Topic implements Password.PasswordProtectable {
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Category category;
 
-    @OneToMany(mappedBy = "topic", cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "topic", fetch = FetchType.LAZY)
     private List<Post> posts = new ArrayList<>();
 
     private Date createdAt;
@@ -62,17 +63,17 @@ public class Topic implements Password.PasswordProtectable {
     }
 
     public void ifRemovable(String rawPassword, Function<Topic, Long> postCounter, Consumer<Topic> action) {
+        Objects.requireNonNull(postCounter, "postCreator must not be null");
+
         verify(rawPassword);
 
         if (postCounter.apply(this) > 0) {
             throw new ForumExceptions.PostAlreadyExistsInTopicException(getId());
         }
 
-        action.accept(this);
-    }
-
-    public void reply(Function<Topic, Post> postCreator) {
-        posts.add(postCreator.apply(this));
+        if (Objects.nonNull(action)) {
+            action.accept(this);
+        }
     }
 
 

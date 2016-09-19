@@ -1,7 +1,9 @@
 package sample.service.forum;
 
 import lombok.val;
+import org.hibernate.action.internal.EntityIdentityInsertAction;
 import org.springframework.stereotype.Service;
+import sample.domain.EntityId;
 import sample.domain.forum.*;
 import sample.domain.forum.ForumExceptions.CategoryNotFoundException;
 import sample.domain.forum.ForumExceptions.TopicNotFoundException;
@@ -66,14 +68,21 @@ public class SampleForumService implements ForumService {
     public void remove(RemoveTopic command) {
         val topic = loadTopic(command.getTopicId());
 
+        if (!topic.getPassword().matches(command.getPassword())) {
+            throw new ForumExceptions.BadPasswordException();
+        }
+
         topic.ifRemovable(command.getPassword(), postRepository::countByTopic, topicRepository::delete);
     }
 
     @Override
-    public void reply(ReplyPost command) {
+    public EntityId<Long> reply(ReplyPost command) {
         val topic = loadTopic(command.getTopicId());
 
-        topic.reply(command.toPostCreator());
+        return postRepository.save(new Post(command.getText()
+                                          , command.getAuthor()
+                                          , command.getPassword()
+                                          , topic));
     }
 
     @Override

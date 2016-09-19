@@ -2,13 +2,12 @@ package sample.service.forum;
 
 import com.woowahan.common.service.validation.Validatable;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Setter;
 import org.hibernate.validator.constraints.NotEmpty;
-import sample.domain.forum.Category;
-import sample.domain.forum.Post;
-import sample.domain.forum.PostCreator;
-import sample.domain.forum.Topic;
+import sample.domain.EntityId;
+import sample.domain.forum.*;
 
 import javax.transaction.Transactional;
 import javax.validation.constraints.NotNull;
@@ -33,7 +32,7 @@ public interface ForumService {
     void edit(EditTopic command);
     void remove(RemoveTopic command);
 
-    void reply(ReplyPost command);
+    EntityId<Long> reply(ReplyPost command);
 
 
     List<Post> loadPosts(Topic topic);
@@ -90,6 +89,7 @@ public interface ForumService {
     }
 
     @Data
+    @Builder
     class ReplyPost implements Validatable {
 
         @NotNull
@@ -106,10 +106,6 @@ public interface ForumService {
 
         @NotEmpty
         private String password;
-
-        public PostCreator toPostCreator() {
-            return new PostCreator(text, author, password);
-        }
 
     }
 

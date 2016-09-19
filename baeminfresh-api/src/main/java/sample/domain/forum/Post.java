@@ -1,5 +1,7 @@
 package sample.domain.forum;
 
+import sample.domain.EntityId;
+
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Objects;
@@ -8,7 +10,7 @@ import java.util.Objects;
  * @author ykpark@woowahan.com
  */
 @Entity
-public class Post implements Password.PasswordProtectable {
+public class Post implements EntityId<Long>, Password.PasswordProtectable {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

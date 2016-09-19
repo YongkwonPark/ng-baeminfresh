@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.transaction.TestTransaction;
-import sample.domain.forum.PostCreator;
 import sample.domain.forum.PostRepository;
 import sample.domain.forum.Topic;
 
@@ -36,7 +35,12 @@ public class SampleForumServiceIntegrationTest {
         Topic topic = forumService.loadTopic(UUID.fromString("53fc14fc-2a3a-41d4-ac2a-cd35ed935217"));
         Long countByTopic = postRepository.countByTopic(topic);
 
-        topic.reply(new PostCreator("text", "author", "password"));
+        forumService.reply(ForumService.ReplyPost.builder()
+                                       .topicId(topic.getId())
+                                       .text("text")
+                                       .author("author")
+                                       .password("password")
+                                       .build());
 
         TestTransaction.flagForCommit();
         TestTransaction.end();

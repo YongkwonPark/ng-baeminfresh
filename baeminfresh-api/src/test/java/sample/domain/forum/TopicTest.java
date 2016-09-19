@@ -63,7 +63,7 @@ public class TopicTest {
         Topic topic = new Topic(UUID.randomUUID(), "title", "author", password, mock(Category.class));
 
         Consumer<Topic> action = mock(Consumer.class);
-        topic.ifRemovable(password, () -> 0l, action);
+        topic.ifRemovable(password, t -> 0l, action);
 
         verify(action, times(1)).accept(topic);
     }
@@ -73,7 +73,7 @@ public class TopicTest {
         String password = "password";
         Topic topic = new Topic(UUID.randomUUID(), "title", "author", password, mock(Category.class));
 
-        topic.ifRemovable(password, () -> 1l, mock(Consumer.class));
+        topic.ifRemovable(password, t -> 1l, mock(Consumer.class));
     }
 
 }
