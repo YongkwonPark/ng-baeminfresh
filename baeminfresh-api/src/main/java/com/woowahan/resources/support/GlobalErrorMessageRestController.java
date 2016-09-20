@@ -59,7 +59,7 @@ public class GlobalErrorMessageRestController extends AbstractErrorController {
         String message;
 
         Throwable throwable = errorAttributes.getError(requestAttributes);
-        if (MessageSourceResolvable.class.isAssignableFrom(throwable.getClass())) {
+        if (Objects.nonNull(throwable) && MessageSourceResolvable.class.isAssignableFrom(throwable.getClass())) {
             message = messageSource.getMessage((MessageSourceResolvable) throwable, locale);
         } else {
             message = messageSource.getMessage("error." + status, null, null, locale);
